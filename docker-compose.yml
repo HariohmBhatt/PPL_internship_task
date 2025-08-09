@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: quiz-db
+    environment:
+      POSTGRES_DB: quiz
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d quiz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    build: .
+    container_name: quiz-api
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/quiz
+      - JWT_SECRET=dev-secret-change-in-production
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
+      - ENV=dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app:ro
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    command: >
+      sh -c "
+        alembic upgrade head &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # Test database for running tests
+  test-db:
+    image: postgres:15-alpine
+    container_name: quiz-test-db
+    environment:
+      POSTGRES_DB: quiz_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    profiles:
+      - test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d quiz_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: quiz-network

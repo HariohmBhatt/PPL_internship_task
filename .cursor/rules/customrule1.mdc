@@ -1,0 +1,92 @@
+---
+alwaysApply: true
+---
+# CURSOR\_RULES.md
+
+## Mission
+
+Automate delivery of the AI Quiz Microservice to a hosted URL with a clean REST API, AI‑powered evaluation, and solid DX. Always align with **PRD.md**.
+
+## Tech & Project Contract (hard requirements)
+
+* **Stack:** Python 3.11, FastAPI, SQLAlchemy, Alembic, PostgreSQL, PyJWT.
+* **Quality:** ruff + black + mypy; pytest min coverage 80%.
+* **Docs:** OpenAPI auto‑docs, `README.md` with run/deploy instructions, Postman collection.
+* **Packaging:** Dockerfile builds a minimal image; health endpoints present.
+* **Secrets:** Read from `.env` only; never commit secrets.
+
+## Repository Layout
+
+```
+/ (repo root)
+  PRD.md
+  CURSOR_RULES.md
+  CURSOR.md
+  TASKS.md
+  README.md
+  .env.example
+  docker-compose.yml
+  Dockerfile
+  postman/quiz-service.postman_collection.json
+  app/
+    main.py
+    api/ (routers)
+    core/ (config, security, deps)
+    models/ (SQLAlchemy)
+    schemas/ (pydantic)
+    services/ (ai, grading, adaptive)
+    db/ (session, migrations/)
+    tests/
+```
+
+## Implementation Priorities
+
+1. Bootstrap FastAPI + healthz + JWT mock login.
+2. DB models + Alembic migrations.
+3. Quiz generation endpoint (store questions).
+4. Hint endpoint.
+5. Submit + evaluate (MCQ + short answer).
+6. History filters + retry.
+7. Adaptive `next` endpoint.
+8. Postman + Docker + deploy.
+
+## Coding Guidelines
+
+* Pydantic v2 schemas; explicit response models.
+* Use UTC everywhere; parse DD/MM/YYYY into UTC for filters.
+* Validate inputs rigorously; return `VALIDATION_ERROR` with field paths.
+* Log with `structlog` or stdlib JSON; include `request_id` middleware.
+* No synchronous network calls inside DB transactions.
+
+## AI Abstraction
+
+* `services/ai/provider.py` defines `generate_questions()`, `grade_short_answer()`, `hint()`, `suggest_improvements()`.
+* Implement `OpenAIProvider` and `MockProvider` (for tests).
+* All prompts templated and unit‑tested for invariants (no answer leakage in hints).
+
+## Security Rules
+
+* JWT HS256; secret from `JWT_SECRET`.
+* Rate limit hints (per user/question) and submissions (per quiz) to curb abuse.
+* Strip PII from logs; redact `Authorization`.
+* CORS allowlist via `ALLOWED_ORIGINS`.
+
+## Testing Rules
+
+* Unit: adaptive policy, scoring, payload validators.
+* Integration: migrations up/down; CRUD; history filters.
+* Contract: snapshot tests on OpenAPI; Postman newman CI run against staging.
+
+## Git & CI Rules
+
+* Conventional Commits (`feat:`, `fix:`, `chore:` …).
+* Small PRs (< 400 LOC).
+* CI must pass (lint, type, test) before merge.
+* Main is deployable; releases tagged.
+
+## Definition of Done
+
+* Endpoint implemented with tests, docs, and error handling.
+* Observability hooks added.
+* Postman example updated.
+* Added to `TASKS.md` checklist as ✅.
