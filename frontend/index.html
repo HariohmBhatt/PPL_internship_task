@@ -428,8 +428,8 @@
                         <input type="date" id="toDate" placeholder="End date">
                     </div>
                     <div class="form-group">
-                        <label for="gradeLevel">Filter by Grade:</label>
-                        <select id="gradeLevel">
+                        <label for="historyGradeLevel">Filter by Grade:</label>
+                        <select id="historyGradeLevel">
                             <option value="">All Grades</option>
                             <option value="6">Grade 6</option>
                             <option value="7">Grade 7</option>
@@ -812,9 +812,9 @@
                     };
                     
                     // Only include the field that has a value
-                    if (answer.selected_option !== undefined && answer.selected_option !== null) {
+                    if (answer.selected_option !== undefined && answer.selected_option !== null && String(answer.selected_option).trim() !== '') {
                         cleanAnswer.selected_option = answer.selected_option;
-                    } else if (answer.answer_text !== undefined && answer.answer_text !== null && answer.answer_text !== '') {
+                    } else if (answer.answer_text !== undefined && answer.answer_text !== null && String(answer.answer_text).trim() !== '') {
                         cleanAnswer.answer_text = answer.answer_text;
                     } else {
                         // Fallback - if no answer, provide empty text
@@ -1001,7 +1001,7 @@
                 const maxMarks = document.getElementById('maxMarks')?.value;
                 const fromDate = document.getElementById('fromDate')?.value;
                 const toDate = document.getElementById('toDate')?.value;
-                const gradeLevel = document.getElementById('gradeLevel')?.value;
+                const gradeLevel = document.getElementById('historyGradeLevel')?.value;
                 
                 // Add filters to params
                 if (subject) params.append('subject', subject);
@@ -1120,7 +1120,7 @@
             document.getElementById('maxMarks').value = '';
             document.getElementById('fromDate').value = '';
             document.getElementById('toDate').value = '';
-            document.getElementById('gradeLevel').value = '';
+            document.getElementById('historyGradeLevel').value = '';
             
             // Reload history without filters
             loadHistory();

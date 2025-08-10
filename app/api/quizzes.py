@@ -229,8 +229,8 @@ async def submit_quiz(
         answer = Answer(
             submission_id=submission.id,
             question_id=answer_data.question_id,
-            answer_text=answer_data.answer_text,
-            selected_option=answer_data.selected_option,
+            answer_text=(answer_data.answer_text or None),
+            selected_option=(answer_data.selected_option or None),
             time_spent_seconds=answer_data.time_spent_seconds,
         )
         answers.append(answer)

@@ -124,6 +124,14 @@ async def get_quiz_history(
     # Execute query
     result = await db.execute(query)
     submissions = result.scalars().all()
+
+    # If filters applied and no records, still return accurate totals and empty list
+    if total == 0:
+        logger.info(
+            "History filter yielded no results",
+            user_id=current_user.id,
+            filters=filters_applied
+        )
     
     # Convert to response format
     submission_summaries = []

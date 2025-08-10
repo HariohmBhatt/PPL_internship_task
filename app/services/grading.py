@@ -1,6 +1,7 @@
 """Grading service for quiz evaluation."""
 
 from typing import Any, Dict, List
+import re
 
 import structlog
 
@@ -147,9 +148,53 @@ class GradingService:
         """Grade an individual answer."""
         max_points = float(question.points)
         
+        def normalize_text(text: str) -> str:
+            return re.sub(r"\s+", " ", text or "").strip().lower()
+
+        def extract_numbers(text: str) -> List[float]:
+            if not text:
+                return []
+            nums = []
+            for match in re.findall(r"-?\d*\.?\d+", text):
+                try:
+                    nums.append(float(match))
+                except ValueError:
+                    continue
+            return nums
+
+        def boolean_equivalent(a: str, b: str) -> bool:
+            truthy = {"true", "t", "yes", "y", "1"}
+            falsy = {"false", "f", "no", "n", "0"}
+            na = normalize_text(a)
+            nb = normalize_text(b)
+            return (na in truthy and nb in truthy) or (na in falsy and nb in falsy)
+
+        def obviously_correct(student: str, correct: str) -> bool:
+            if not student or not correct:
+                return False
+            ns = normalize_text(student)
+            nc = normalize_text(correct)
+            if ns == nc:
+                return True
+            if boolean_equivalent(ns, nc):
+                return True
+            # Numeric tolerance match (order-insensitive, units ignored)
+            snums = extract_numbers(ns)
+            cnums = extract_numbers(nc)
+            if snums and cnums and len(snums) == len(cnums):
+                tol = 1e-6
+                return all(abs(s - c) <= tol for s, c in zip(snums, cnums))
+            return False
+
         if question.question_type in ["MCQ", "TF"]:
             # Rule-based grading for objective questions
-            is_correct = answer.selected_option == question.correct_answer
+            # Be robust to case/whitespace and boolean synonyms
+            selected = answer.selected_option or ""
+            correct = question.correct_answer or ""
+            is_correct = (
+                normalize_text(selected) == normalize_text(correct)
+                or boolean_equivalent(selected, correct)
+            )
             points_earned = max_points if is_correct else 0.0
             ai_feedback = None
             confidence_score = 1.0
@@ -162,26 +207,33 @@ class GradingService:
                 ai_feedback = "No answer provided."
                 confidence_score = 1.0
             else:
-                try:
-                    grading_result = await self.ai_provider.grade_short_answer(
-                        question=question.question_text,
-                        correct_answer=question.correct_answer or "",
-                        student_answer=answer.answer_text,
-                        max_points=max_points,
-                    )
-                    
-                    points_earned = grading_result["score"]
-                    is_correct = points_earned >= (max_points * 0.6)  # 60% threshold
-                    ai_feedback = grading_result["feedback"]
-                    confidence_score = grading_result["confidence"]
-                    
-                except Exception as e:
-                    logger.error("AI grading failed", error=str(e), question_id=question.id)
-                    # Fallback grading
-                    points_earned = max_points * 0.5  # Give 50% credit
-                    is_correct = False
-                    ai_feedback = "Automatic grading unavailable. Manual review may be needed."
-                    confidence_score = 0.5
+                # Short-circuit: if student's text obviously matches expected, award full credit
+                if obviously_correct(answer.answer_text, question.correct_answer or ""):
+                    points_earned = max_points
+                    is_correct = True
+                    ai_feedback = "Matched expected answer."
+                    confidence_score = 1.0
+                else:
+                    try:
+                        grading_result = await self.ai_provider.grade_short_answer(
+                            question=question.question_text,
+                            correct_answer=question.correct_answer or "",
+                            student_answer=answer.answer_text,
+                            max_points=max_points,
+                        )
+                        
+                        points_earned = grading_result["score"]
+                        is_correct = points_earned >= (max_points * 0.6)  # 60% threshold
+                        ai_feedback = grading_result["feedback"]
+                        confidence_score = grading_result["confidence"]
+                        
+                    except Exception as e:
+                        logger.error("AI grading failed", error=str(e), question_id=question.id)
+                        # Fallback grading
+                        points_earned = max_points * 0.5  # Give 50% credit
+                        is_correct = False
+                        ai_feedback = "Automatic grading unavailable. Manual review may be needed."
+                        confidence_score = 0.5
         
         # Apply hint penalty if hints were used
         hint_penalty = answer.hints_used * 0.1 * max_points  # 10% penalty per hint
