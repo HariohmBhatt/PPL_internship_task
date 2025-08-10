@@ -744,30 +744,26 @@
             document.getElementById('resultsSection').classList.add('hidden');
         }
 
-        // Save user answer
+        // Save user answer (robustly detects MCQ/TF via question metadata)
         function saveAnswer(questionId, answer) {
-            // Determine if this is a multiple choice or text answer
-            // Check if answer looks like an MCQ option or boolean
-            const isMultipleChoice = answer && (
-                answer.startsWith('Option') ||  // Option A, Option B, etc.
-                answer === 'True' || 
-                answer === 'False' ||
-                /^[A-Za-z]\s*[=)]/.test(answer) ||  // "x = 4", "y = 11", etc.
-                /^[A-Za-z]\s*\d+/.test(answer)     // "x 4", "y 11", etc.
-            );
-            
+            const question = (currentQuestions || []).find(q => q.id === questionId) || null;
+            const isChoice = !!(question && Array.isArray(question.options) && question.options.length > 0);
+
             const answerData = {
                 question_id: questionId,
                 time_spent_seconds: Math.floor((Date.now() - quizStartTime) / 1000)
             };
-            
-            // Only set the field that has a value (never both undefined)
-            if (isMultipleChoice) {
-                answerData.selected_option = answer;
+
+            if (isChoice) {
+                // MCQ/TF: always send selected_option
+                const selected = String(answer ?? '').trim();
+                if (selected) answerData.selected_option = selected;
             } else {
-                answerData.answer_text = answer || '';  // Ensure it's never undefined
+                // Free-text: send answer_text
+                const text = String(answer ?? '').trim();
+                if (text) answerData.answer_text = text;
             }
-            
+
             userAnswers[questionId] = answerData;
             console.log('Saved answer for question', questionId, ':', userAnswers[questionId]);
         }
@@ -811,14 +807,19 @@
                         time_spent_seconds: answer.time_spent_seconds || 30
                     };
                     
-                    // Only include the field that has a value
-                    if (answer.selected_option !== undefined && answer.selected_option !== null && String(answer.selected_option).trim() !== '') {
-                        cleanAnswer.selected_option = answer.selected_option;
-                    } else if (answer.answer_text !== undefined && answer.answer_text !== null && String(answer.answer_text).trim() !== '') {
-                        cleanAnswer.answer_text = answer.answer_text;
+                    const question = (currentQuestions || []).find(q => q.id === answer.question_id) || null;
+                    const isChoice = !!(question && Array.isArray(question.options) && question.options.length > 0);
+
+                    if (isChoice) {
+                        if (answer.selected_option && String(answer.selected_option).trim() !== '') {
+                            cleanAnswer.selected_option = String(answer.selected_option).trim();
+                        }
                     } else {
-                        // Fallback - if no answer, provide empty text
-                        cleanAnswer.answer_text = '';
+                        if (answer.answer_text && String(answer.answer_text).trim() !== '') {
+                            cleanAnswer.answer_text = String(answer.answer_text).trim();
+                        } else {
+                            cleanAnswer.answer_text = '';
+                        }
                     }
                     
                     return cleanAnswer;
