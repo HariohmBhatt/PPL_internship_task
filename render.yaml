@@ -1,0 +1,59 @@
+# Render.com deployment configuration for AI Quiz Microservice
+
+services:
+  # Web Service (FastAPI Application)
+  - type: web
+    name: ai-quiz-microservice
+    env: python
+    plan: free
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -e .
+    startCommand: python start.py
+    healthCheckPath: /healthz
+    envVars:
+      - key: ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PORT
+        fromService:
+          type: web
+          name: ai-quiz-microservice
+          property: port
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ai-quiz-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: ai-quiz-redis
+          property: connectionString
+      # You'll need to add these manually in Render dashboard:
+      # - OPENAI_API_KEY (your OpenAI API key)
+      # - GEMINI_API_KEY (your Gemini API key)
+      # - SMTP_USERNAME (your email)
+      # - SMTP_PASSWORD (your app password)
+      # - NOTIFICATION_FROM_EMAIL (your from email)
+
+  # Redis Service (for caching)
+  - type: redis
+    name: ai-quiz-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  # PostgreSQL Database
+  - name: ai-quiz-postgres
+    plan: free
+    databaseName: quiz_db
+    user: quiz_user
+
+# Note: Free tier limitations on Render:
+# - Web service: 750 hours/month, sleeps after 15 min of inactivity
+# - PostgreSQL: 1GB storage, 100 connections
+# - Redis: 25MB storage
+# - Custom domains require paid plan

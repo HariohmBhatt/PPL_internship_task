@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Quiz Service - Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #5a67d8;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #5a67d8;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #5a67d8, #667eea);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(90, 103, 216, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #718096, #4a5568);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ed8936, #dd6b20);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #5a67d8;
+            border: 2px solid #5a67d8;
+        }
+
+        .btn-outline:hover {
+            background: #5a67d8;
+            color: white;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .status.success {
+            background: #f0fff4;
+            color: #38a169;
+            border: 1px solid #c6f6d5;
+        }
+
+        .status.error {
+            background: #fed7d7;
+            color: #e53e3e;
+            border: 1px solid #feb2b2;
+        }
+
+        .status.info {
+            background: #ebf8ff;
+            color: #3182ce;
+            border: 1px solid #bee3f8;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .quiz-question {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #5a67d8;
+        }
+
+        .quiz-question h4 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .option {
+            display: block;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .option:hover {
+            background: #edf2f7;
+        }
+
+        .option input {
+            margin-right: 8px;
+            width: auto;
+        }
+
+        .results {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .score {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #5a67d8;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .suggestions {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .suggestions h4 {
+            color: #e53e3e;
+            margin-bottom: 10px;
+        }
+
+        .suggestions ul {
+            padding-left: 20px;
+        }
+
+        .suggestions li {
+            margin-bottom: 5px;
+            color: #4a5568;
+        }
+
+        .history-item {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item .score-badge {
+            background: #5a67d8;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #5a67d8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hint-box {
+            background: #fff5cd;
+            border: 1px solid #f6e05e;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            color: #744210;
+        }
+
+        .hint-box .hint-text {
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .hint-usage {
+            font-size: 12px;
+            color: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 AI Quiz Service</h1>
+            <p>Experience AI-powered quiz generation, evaluation, and adaptive learning</p>
+            <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 14px;">
+                🎉 <strong>New Features:</strong> Leaderboards 🏆 | Redis Caching ⚡ | Email Notifications 📧
+            </div>
+        </div>
+
+        <!-- Status Display -->
+        <div id="status" class="hidden"></div>
+
+        <!-- Login Section -->
+        <div id="loginSection" class="card">
+            <h2>🔐 Authentication</h2>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" value="demo" placeholder="Enter any username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" value="demo" placeholder="Enter any password">
+            </div>
+            <button class="btn" onclick="login()">
+                <span id="loginLoader" class="loading hidden"></span>
+                Login
+            </button>
+            <p style="margin-top: 10px; color: #718096; font-size: 14px;">
+                💡 This is a mock authentication - any username/password will work!
+            </p>
+        </div>
+
+        <!-- Main App (Hidden until logged in) -->
+        <div id="mainApp" class="hidden">
+            <div class="grid">
+                <!-- Quiz Creation -->
+                <div class="card">
+                    <h2>📝 Create Quiz</h2>
+                    <div class="form-group">
+                        <label for="subject">Subject:</label>
+                        <select id="subject">
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Science">Science</option>
+                            <option value="History">History</option>
+                            <option value="English">English</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="gradeLevel">Grade Level:</label>
+                        <select id="gradeLevel">
+                            <option value="6">Grade 6</option>
+                            <option value="7">Grade 7</option>
+                            <option value="8">Grade 8</option>
+                            <option value="9">Grade 9</option>
+                            <option value="10">Grade 10</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="numQuestions">Number of Questions:</label>
+                        <select id="numQuestions">
+                            <option value="3">3 Questions</option>
+                            <option value="5">5 Questions</option>
+                            <option value="8">8 Questions</option>
+                            <option value="10">10 Questions</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="difficulty">Difficulty:</label>
+                        <select id="difficulty">
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                            <option value="adaptive">Adaptive</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="createQuiz()">
+                        <span id="createLoader" class="loading hidden"></span>
+                        Generate Quiz with AI
+                    </button>
+                </div>
+
+                <!-- Quiz History -->
+                <div class="card">
+                    <h2>📊 Quiz History</h2>
+                    <div class="form-group">
+                        <label for="historySubject">Filter by Subject:</label>
+                        <select id="historySubject">
+                            <option value="">All Subjects</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Science">Science</option>
+                            <option value="History">History</option>
+                            <option value="English">English</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="minMarks">Minimum Score (%):</label>
+                        <input type="number" id="minMarks" min="0" max="100" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="maxMarks">Maximum Score (%):</label>
+                        <input type="number" id="maxMarks" min="0" max="100" placeholder="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="fromDate">From Date:</label>
+                        <input type="date" id="fromDate" placeholder="Start date">
+                    </div>
+                    <div class="form-group">
+                        <label for="toDate">To Date:</label>
+                        <input type="date" id="toDate" placeholder="End date">
+                    </div>
+                    <div class="form-group">
+                        <label for="gradeLevel">Filter by Grade:</label>
+                        <select id="gradeLevel">
+                            <option value="">All Grades</option>
+                            <option value="8">Grade 8</option>
+                            <option value="9">Grade 9</option>
+                            <option value="10">Grade 10</option>
+                            <option value="11">Grade 11</option>
+                            <option value="12">Grade 12</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="loadHistory()">
+                            <span id="historyLoader" class="loading hidden"></span>
+                            Load History
+                        </button>
+                        <button class="btn btn-outline" onclick="clearFilters()">
+                            Clear Filters
+                        </button>
+                    </div>
+                    <div id="historyResults"></div>
+                </div>
+
+                <!-- Leaderboard Section (Bonus Feature) -->
+                <div class="card">
+                    <h2>🏆 Leaderboard</h2>
+                    <div class="form-group">
+                        <label for="leaderboardSubject">Subject:</label>
+                        <select id="leaderboardSubject">
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Science">Science</option>
+                            <option value="History">History</option>
+                            <option value="English">English</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="leaderboardGrade">Grade Level:</label>
+                        <select id="leaderboardGrade">
+                            <option value="6">Grade 6</option>
+                            <option value="7">Grade 7</option>
+                            <option value="8">Grade 8</option>
+                            <option value="9">Grade 9</option>
+                            <option value="10">Grade 10</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="leaderboardLimit">Top Players:</label>
+                        <select id="leaderboardLimit">
+                            <option value="5">Top 5</option>
+                            <option value="10">Top 10</option>
+                            <option value="20">Top 20</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-success" onclick="loadLeaderboard()">
+                            <span id="leaderboardLoader" class="loading hidden"></span>
+                            View Leaderboard
+                        </button>
+                        <button class="btn btn-outline" onclick="loadMyRank()">
+                            My Rank
+                        </button>
+                    </div>
+                    <div id="leaderboardResults"></div>
+                    <div id="myRankResults"></div>
+                </div>
+            </div>
+
+            <!-- Quiz Taking Section -->
+            <div id="quizSection" class="card hidden">
+                <h2>🎯 Take Quiz</h2>
+                <div id="quizContent"></div>
+                <div id="currentHints"></div>
+                <button class="btn btn-success" onclick="submitQuiz()">
+                    <span id="submitLoader" class="loading hidden"></span>
+                    Submit Quiz
+                </button>
+                <button class="btn btn-warning" onclick="retryQuiz()" id="retryBtn" style="display: none;">
+                    Retry Quiz
+                </button>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="card hidden">
+                <h2>🏆 Quiz Results</h2>
+                <div id="resultsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let authToken = null;
+        let currentQuiz = null;
+        let currentQuestions = [];
+        let userAnswers = {};
+        let quizStartTime = null;
+
+        const API_BASE = 'http://localhost:8000';
+
+        // Utility functions
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+            statusEl.classList.remove('hidden');
+            setTimeout(() => statusEl.classList.add('hidden'), 5000);
+        }
+
+        function showLoader(id, show = true) {
+            const loader = document.getElementById(id);
+            if (loader) {
+                loader.classList.toggle('hidden', !show);
+            }
+        }
+
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            const config = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+
+            if (authToken) {
+                config.headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            if (data) {
+                config.body = JSON.stringify(data);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, config);
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    let errorMessage = 'API Error';
+                    
+                    if (result.error?.message) {
+                        errorMessage = typeof result.error.message === 'string' ? result.error.message : JSON.stringify(result.error.message);
+                    } else if (result.detail) {
+                        errorMessage = typeof result.detail === 'string' ? result.detail : JSON.stringify(result.detail);
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+                
+                return result;
+            } catch (error) {
+                console.error('API Error:', error);
+                
+                // Ensure error message is always a string
+                if (error.message && typeof error.message === 'object') {
+                    error.message = JSON.stringify(error.message);
+                }
+                
+                throw error;
+            }
+        }
+
+        // Authentication
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showStatus('Please enter username and password', 'error');
+                return;
+            }
+
+            showLoader('loginLoader');
+            
+            try {
+                const response = await apiCall('/auth/login', 'POST', { username, password });
+                authToken = response.access_token;
+                
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                
+                showStatus('Login successful! Welcome to AI Quiz Service', 'success');
+                loadHistory(); // Load initial history
+            } catch (error) {
+                showStatus(`Login failed: ${error.message}`, 'error');
+            } finally {
+                showLoader('loginLoader', false);
+            }
+        }
+
+        // Quiz creation
+        async function createQuiz() {
+            const subject = document.getElementById('subject').value;
+            const gradeLevel = document.getElementById('gradeLevel').value;
+            const numQuestions = parseInt(document.getElementById('numQuestions').value);
+            const difficulty = document.getElementById('difficulty').value;
+
+            showLoader('createLoader');
+
+            try {
+                const quizData = {
+                    subject,
+                    grade_level: gradeLevel,
+                    num_questions: numQuestions,
+                    difficulty,
+                    topics: [subject.toLowerCase()],
+                    question_types: ['MCQ', 'TF'],
+                    adaptive: difficulty === 'adaptive'
+                };
+
+                currentQuiz = await apiCall('/quizzes', 'POST', quizData);
+                currentQuestions = await apiCall(`/quizzes/${currentQuiz.id}/questions`);
+                
+                showStatus(`Quiz created successfully! ${numQuestions} questions generated with AI`, 'success');
+                displayQuiz();
+                
+            } catch (error) {
+                showStatus(`Failed to create quiz: ${error.message}`, 'error');
+            } finally {
+                showLoader('createLoader', false);
+            }
+        }
+
+        // Display quiz questions
+        function displayQuiz() {
+            if (!currentQuestions.length) return;
+
+            quizStartTime = Date.now();
+            userAnswers = {};
+            
+            const quizContent = document.getElementById('quizContent');
+            quizContent.innerHTML = '';
+
+            currentQuestions.forEach((question, index) => {
+                const questionEl = document.createElement('div');
+                questionEl.className = 'quiz-question';
+                
+                let optionsHtml = '';
+                if (question.options && question.options.length > 0) {
+                    optionsHtml = question.options.map((option, optIndex) => `
+                        <label class="option">
+                            <input type="radio" name="question_${question.id}" value="${option}" 
+                                   onchange="saveAnswer(${question.id}, '${option}')">
+                            ${option}
+                        </label>
+                    `).join('');
+                } else {
+                    optionsHtml = `
+                        <textarea placeholder="Enter your answer..." 
+                                  onchange="saveAnswer(${question.id}, this.value)"
+                                  style="margin-top: 10px;"></textarea>
+                    `;
+                }
+
+                questionEl.innerHTML = `
+                    <h4>Question ${index + 1}: ${question.question_text}</h4>
+                    <p><strong>Topic:</strong> ${question.topic} | <strong>Difficulty:</strong> ${question.difficulty} | <strong>Points:</strong> ${question.points}</p>
+                    ${optionsHtml}
+                    <button class="btn btn-secondary" style="margin-top: 10px; font-size: 12px;" 
+                            onclick="getHint(${currentQuiz.id}, ${question.id})">
+                        💡 Get AI Hint
+                    </button>
+                    <div id="hint_${question.id}"></div>
+                `;
+
+                quizContent.appendChild(questionEl);
+            });
+
+            document.getElementById('quizSection').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+        }
+
+        // Save user answer
+        function saveAnswer(questionId, answer) {
+            // Determine if this is a multiple choice or text answer
+            // Check if answer looks like an MCQ option or boolean
+            const isMultipleChoice = answer && (
+                answer.startsWith('Option') ||  // Option A, Option B, etc.
+                answer === 'True' || 
+                answer === 'False' ||
+                /^[A-Za-z]\s*[=)]/.test(answer) ||  // "x = 4", "y = 11", etc.
+                /^[A-Za-z]\s*\d+/.test(answer)     // "x 4", "y 11", etc.
+            );
+            
+            const answerData = {
+                question_id: questionId,
+                time_spent_seconds: Math.floor((Date.now() - quizStartTime) / 1000)
+            };
+            
+            // Only set the field that has a value (never both undefined)
+            if (isMultipleChoice) {
+                answerData.selected_option = answer;
+            } else {
+                answerData.answer_text = answer || '';  // Ensure it's never undefined
+            }
+            
+            userAnswers[questionId] = answerData;
+            console.log('Saved answer for question', questionId, ':', userAnswers[questionId]);
+        }
+
+        // Get AI hint
+        async function getHint(quizId, questionId) {
+            try {
+                const hint = await apiCall(`/quizzes/${quizId}/questions/${questionId}/hint`, 'POST', {});
+                
+                const hintEl = document.getElementById(`hint_${questionId}`);
+                hintEl.innerHTML = `
+                    <div class="hint-box">
+                        <div class="hint-text">💡 <strong>AI Hint:</strong> ${hint.hint}</div>
+                        <div class="hint-usage">Hints used: ${hint.usage_count}/${hint.max_hints}</div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                if (error.message.includes('429')) {
+                    showStatus('Hint limit reached for this question (3 max)', 'error');
+                } else {
+                    showStatus(`Failed to get hint: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // Submit quiz
+        async function submitQuiz() {
+            if (Object.keys(userAnswers).length === 0) {
+                showStatus('Please answer at least one question', 'error');
+                return;
+            }
+
+            showLoader('submitLoader');
+
+            try {
+                // Clean up the answers to match API expectations
+                const cleanAnswers = Object.values(userAnswers).map(answer => {
+                    const cleanAnswer = {
+                        question_id: answer.question_id,
+                        time_spent_seconds: answer.time_spent_seconds || 30
+                    };
+                    
+                    // Only include the field that has a value
+                    if (answer.selected_option !== undefined && answer.selected_option !== null) {
+                        cleanAnswer.selected_option = answer.selected_option;
+                    } else if (answer.answer_text !== undefined && answer.answer_text !== null && answer.answer_text !== '') {
+                        cleanAnswer.answer_text = answer.answer_text;
+                    } else {
+                        // Fallback - if no answer, provide empty text
+                        cleanAnswer.answer_text = '';
+                    }
+                    
+                    return cleanAnswer;
+                });
+
+                const submissionData = {
+                    answers: cleanAnswers,
+                    time_taken_minutes: Math.floor((Date.now() - quizStartTime) / 60000) || 1
+                };
+
+                console.log('Submitting quiz data:', submissionData);
+                
+                const results = await apiCall(`/quizzes/${currentQuiz.id}/submit`, 'POST', submissionData);
+                
+                console.log('Quiz submission results:', results);
+                displayResults(results);
+                loadHistory(); // Refresh history
+                
+            } catch (error) {
+                console.error('Quiz submission error:', error);
+                
+                let errorMessage = 'Unknown error';
+                if (error.message) {
+                    errorMessage = error.message;
+                } else if (typeof error === 'string') {
+                    errorMessage = error;
+                } else {
+                    errorMessage = JSON.stringify(error);
+                }
+                
+                showStatus(`Failed to submit quiz: ${errorMessage}`, 'error');
+            } finally {
+                showLoader('submitLoader', false);
+            }
+        }
+
+        // Display results
+        function displayResults(results) {
+            const resultsContent = document.getElementById('resultsContent');
+            
+            const performanceColor = results.percentage >= 80 ? '#38a169' : 
+                                   results.percentage >= 60 ? '#ed8936' : '#e53e3e';
+
+            resultsContent.innerHTML = `
+                <div class="results">
+                    <div class="score" style="color: ${performanceColor}">
+                        ${Math.round(results.percentage)}%
+                    </div>
+                    <p style="text-align: center; margin-bottom: 20px;">
+                        <strong>Score:</strong> ${results.total_score}/${results.max_possible_score} points<br>
+                        <strong>Correct Answers:</strong> ${results.correct_answers}/${results.total_questions}<br>
+                        <strong>Performance Level:</strong> ${results.performance_level}<br>
+                        <strong>Time Taken:</strong> ${results.time_taken_minutes} minutes
+                    </p>
+                    
+                    ${results.topic_scores ? `
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <h4 style="margin-bottom: 10px;">📈 Topic Performance</h4>
+                            ${Object.entries(results.topic_scores).map(([topic, score]) => `
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span>${topic}:</span>
+                                    <strong>${Math.round(score)}%</strong>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+
+                    ${results.suggestions && results.suggestions.length > 0 ? `
+                        <div class="suggestions">
+                            <h4>🤖 AI Improvement Suggestions</h4>
+                            <ul>
+                                ${results.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+
+                    ${results.strengths && results.strengths.length > 0 ? `
+                        <div style="background: #f0fff4; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <h4 style="color: #38a169; margin-bottom: 10px;">💪 Strengths</h4>
+                            <ul>
+                                ${results.strengths.map(strength => `<li style="color: #2f855a;">${strength}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+
+                    ${results.weaknesses && results.weaknesses.length > 0 ? `
+                        <div style="background: #fed7d7; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <h4 style="color: #e53e3e; margin-bottom: 10px;">🎯 Areas for Improvement</h4>
+                            <ul>
+                                ${results.weaknesses.map(weakness => `<li style="color: #c53030;">${weakness}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            document.getElementById('resultsSection').classList.remove('hidden');
+            document.getElementById('retryBtn').style.display = 'inline-block';
+            
+            showStatus(`Quiz completed! Score: ${Math.round(results.percentage)}% 📧 Results will be emailed to you if notifications are enabled.`, 'success');
+        }
+
+        // Retry quiz
+        async function retryQuiz() {
+            if (!currentQuiz || !currentQuiz.id) {
+                showStatus('No quiz available to retry', 'error');
+                return;
+            }
+
+            console.log('Retrying quiz:', currentQuiz.id);
+
+            try {
+                const retryData = await apiCall(`/quizzes/${currentQuiz.id}/retry`, 'POST', {
+                    reason: 'Retrying to improve score'
+                });
+                
+                console.log('Retry response:', retryData);
+                
+                if (!retryData.new_quiz_id) {
+                    throw new Error('No new quiz ID returned from retry');
+                }
+                
+                showStatus('Quiz retry created! Loading new questions...', 'info');
+                
+                // Load the new quiz
+                currentQuiz.id = retryData.new_quiz_id;
+                currentQuestions = await apiCall(`/quizzes/${currentQuiz.id}/questions`);
+                
+                console.log('New questions loaded:', currentQuestions.length);
+                
+                // Clear previous answers
+                userAnswers = {};
+                quizStartTime = Date.now();
+                
+                displayQuiz();
+                document.getElementById('retryBtn').style.display = 'none';
+                showStatus(`Retry quiz loaded! ${retryData.message}`, 'success');
+                
+            } catch (error) {
+                console.error('Retry failed:', error);
+                showStatus(`Failed to create retry: ${error.message}`, 'error');
+            }
+        }
+
+        // Load quiz history
+        async function loadHistory() {
+            showLoader('historyLoader');
+
+            try {
+                let endpoint = '/quiz-history';
+                const params = new URLSearchParams();
+                
+                // Get all filter values
+                const subject = document.getElementById('historySubject')?.value;
+                const minMarks = document.getElementById('minMarks')?.value;
+                const maxMarks = document.getElementById('maxMarks')?.value;
+                const fromDate = document.getElementById('fromDate')?.value;
+                const toDate = document.getElementById('toDate')?.value;
+                const gradeLevel = document.getElementById('gradeLevel')?.value;
+                
+                // Add filters to params
+                if (subject) params.append('subject', subject);
+                if (minMarks) params.append('min_marks', minMarks);
+                if (maxMarks) params.append('max_marks', maxMarks);
+                if (fromDate) params.append('from_date', fromDate);
+                if (toDate) params.append('to_date', toDate);
+                if (gradeLevel) params.append('grade', gradeLevel);
+                
+                if (params.toString()) endpoint += '?' + params.toString();
+
+                console.log('Loading history with filters:', endpoint);
+                const history = await apiCall(endpoint);
+                displayHistory(history);
+                
+            } catch (error) {
+                showStatus(`Failed to load history: ${error.message}`, 'error');
+            } finally {
+                showLoader('historyLoader', false);
+            }
+        }
+
+        // Load leaderboard (Bonus Feature)
+        async function loadLeaderboard() {
+            showLoader('leaderboardLoader');
+
+            try {
+                const subject = document.getElementById('leaderboardSubject').value;
+                const gradeLevel = document.getElementById('leaderboardGrade').value;
+                const limit = document.getElementById('leaderboardLimit').value;
+                
+                const endpoint = `/leaderboard?subject=${subject}&grade_level=${gradeLevel}&limit=${limit}&ranking_type=best_percentage`;
+                
+                console.log('Loading leaderboard:', endpoint);
+                const leaderboard = await apiCall(endpoint);
+                displayLeaderboard(leaderboard);
+                
+            } catch (error) {
+                showStatus(`Failed to load leaderboard: ${error.message}`, 'error');
+            } finally {
+                showLoader('leaderboardLoader', false);
+            }
+        }
+
+        // Load user's rank (Bonus Feature)
+        async function loadMyRank() {
+            try {
+                const subject = document.getElementById('leaderboardSubject').value;
+                const gradeLevel = document.getElementById('leaderboardGrade').value;
+                
+                const endpoint = `/leaderboard/my-rank?subject=${subject}&grade_level=${gradeLevel}`;
+                
+                console.log('Loading my rank:', endpoint);
+                const myRank = await apiCall(endpoint);
+                displayMyRank(myRank);
+                
+            } catch (error) {
+                if (error.message.includes('404')) {
+                    showStatus('No ranking data found for this subject/grade. Take a quiz first!', 'error');
+                } else {
+                    showStatus(`Failed to load your rank: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // Display history
+        function displayHistory(history) {
+            const historyResults = document.getElementById('historyResults');
+            
+            if (!history.submissions || history.submissions.length === 0) {
+                historyResults.innerHTML = '<p style="text-align: center; color: #718096; margin-top: 15px;">No quiz history found. Take a quiz to see results here!</p>';
+                return;
+            }
+
+            historyResults.innerHTML = `
+                <h4 style="margin: 15px 0 10px 0;">📋 Recent Submissions (${history.total} total)</h4>
+                ${history.submissions.length > 0 ? `
+                    <div style="margin-bottom: 10px; font-size: 12px; color: #718096;">
+                        Filters applied: ${Object.keys(history.filters_applied || {}).length > 0 ? Object.entries(history.filters_applied).map(([key, value]) => `${key}: ${value}`).join(', ') : 'None'}
+                    </div>
+                ` : ''}
+                ${history.submissions.map(submission => {
+                    const submittedDate = submission.submitted_at ? new Date(submission.submitted_at) : null;
+                    const dateStr = submittedDate ? 
+                        submittedDate.toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }) : 'In Progress';
+                    
+                    return `
+                    <div class="history-item">
+                        <div>
+                            <strong>${submission.quiz_title}</strong><br>
+                            <small style="color: #718096;">
+                                ${submission.subject} - Grade ${submission.grade_level}<br>
+                                📅 ${dateStr}<br>
+                                ${submission.is_completed ? '✅ Completed' : '⏳ In Progress'}
+                            </small>
+                        </div>
+                        <div class="score-badge">
+                            ${submission.percentage !== null ? Math.round(submission.percentage) + '%' : 'N/A'}
+                        </div>
+                    </div>
+                    `;
+                }).join('')}
+            `;
+        }
+
+        // Clear all filters
+        function clearFilters() {
+            document.getElementById('historySubject').value = '';
+            document.getElementById('minMarks').value = '';
+            document.getElementById('maxMarks').value = '';
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value = '';
+            document.getElementById('gradeLevel').value = '';
+            
+            // Reload history without filters
+            loadHistory();
+            showStatus('Filters cleared', 'info');
+        }
+
+        // Display leaderboard (Bonus Feature)
+        function displayLeaderboard(leaderboard) {
+            const leaderboardResults = document.getElementById('leaderboardResults');
+            
+            if (!leaderboard.entries || leaderboard.entries.length === 0) {
+                leaderboardResults.innerHTML = '<p style="text-align: center; color: #718096; margin-top: 15px;">No leaderboard data available for this subject/grade combination.</p>';
+                return;
+            }
+
+            leaderboardResults.innerHTML = `
+                <h4 style="margin: 15px 0 10px 0;">🏆 ${leaderboard.subject} - Grade ${leaderboard.grade_level} Leaderboard</h4>
+                <div style="margin-bottom: 10px; font-size: 12px; color: #718096;">
+                    Total participants: ${leaderboard.total_users} | Generated: ${new Date(leaderboard.generated_at).toLocaleString()}
+                </div>
+                ${leaderboard.entries.map((entry, index) => {
+                    let medalIcon = '';
+                    if (index === 0) medalIcon = '🥇';
+                    else if (index === 1) medalIcon = '🥈';
+                    else if (index === 2) medalIcon = '🥉';
+                    else medalIcon = `#${entry.rank}`;
+                    
+                    return `
+                    <div class="history-item" style="background: ${index < 3 ? '#f0fff4' : '#f7fafc'};">
+                        <div>
+                            <strong>${medalIcon} ${entry.username}</strong><br>
+                            <small style="color: #718096;">
+                                Best Score: ${entry.best_percentage.toFixed(1)}% | 
+                                Avg: ${entry.average_score.toFixed(1)} | 
+                                Quizzes: ${entry.total_quizzes}<br>
+                                Accuracy: ${entry.accuracy_percentage.toFixed(1)}% | 
+                                Activity: ${entry.activity_score.toFixed(0)}
+                            </small>
+                        </div>
+                        <div class="score-badge" style="background: ${index < 3 ? '#38a169' : '#5a67d8'};">
+                            ${entry.best_percentage.toFixed(1)}%
+                        </div>
+                    </div>
+                    `;
+                }).join('')}
+                <div style="text-align: center; margin-top: 10px; font-size: 12px; color: #718096;">
+                    🚀 Results cached for better performance
+                </div>
+            `;
+        }
+
+        // Display user's rank (Bonus Feature)
+        function displayMyRank(myRank) {
+            const myRankResults = document.getElementById('myRankResults');
+            
+            const percentileText = myRank.percentile ? `(Top ${(100 - myRank.percentile).toFixed(1)}%)` : '';
+            const gapText = myRank.score_gap_to_leader ? `${myRank.score_gap_to_leader.toFixed(1)}% behind leader` : 'You are the leader!';
+            
+            myRankResults.innerHTML = `
+                <div style="background: #ebf8ff; border: 2px solid #3182ce; border-radius: 8px; padding: 15px; margin-top: 15px;">
+                    <h4 style="color: #2c5282; margin-bottom: 10px;">📊 Your Ranking</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <div><strong>Rank:</strong> #${myRank.current_rank} of ${myRank.total_participants}</div>
+                        <div><strong>Percentile:</strong> ${percentileText}</div>
+                        <div><strong>Best Score:</strong> ${myRank.best_percentage.toFixed(1)}%</div>
+                        <div><strong>Average:</strong> ${myRank.average_score.toFixed(1)}</div>
+                        <div><strong>Quizzes Taken:</strong> ${myRank.total_quizzes}</div>
+                        <div><strong>Gap to Leader:</strong> ${gapText}</div>
+                    </div>
+                    <div style="text-align: center; font-size: 12px; color: #2c5282; margin-top: 10px;">
+                        Keep taking quizzes to improve your ranking! 🎯
+                    </div>
+                </div>
+            `;
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('AI Quiz Service Frontend Loaded');
+            console.log('Backend API:', API_BASE);
+            
+            // Ensure all loaders are hidden on page load
+            const loaders = ['loginLoader', 'createLoader', 'submitLoader', 'historyLoader', 'leaderboardLoader'];
+            loaders.forEach(loaderId => {
+                const loader = document.getElementById(loaderId);
+                if (loader) {
+                    loader.classList.add('hidden');
+                }
+            });
+            
+            // Check if user is already logged in
+            if (authToken) {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('dashboardSection').classList.remove('hidden');
+                loadHistory();
+            }
+        });
+    </script>
+</body>
+</html>
