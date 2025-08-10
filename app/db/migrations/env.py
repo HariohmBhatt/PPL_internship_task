@@ -1,5 +1,21 @@
 """Alembic migration environment."""
 
+from alembic import context
+config = context.config
+
+import os
+
+def _coerce_db_url(url: str) -> str:
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    if url.startswith("postgresql://") and "+psycopg" not in url and "+psycopg2" not in url and "+asyncpg" not in url:
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return url
+
+db_url = os.getenv("DATABASE_URL", "")
+if db_url:
+    config.set_main_option("sqlalchemy.url", _coerce_db_url(db_url))
+
 import asyncio
 from logging.config import fileConfig
 
@@ -12,21 +28,6 @@ from alembic import context
 # Import all models to ensure they are registered with SQLAlchemy
 from app.models import Base
 from app.core.config import get_settings
-
-# Force psycopg3 driver and normalize postgres scheme
-import os
-
-def _coerce_db_url(url: str) -> str:
-    if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql://", 1)
-    if url.startswith("postgresql://") and "+psycopg" not in url and "+psycopg2" not in url and "+asyncpg" not in url:
-        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
-    return url
-
-db_url = os.getenv("DATABASE_URL", "")
-if db_url:
-    db_url = _coerce_db_url(db_url)
-    config.set_main_option("sqlalchemy.url", db_url)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
