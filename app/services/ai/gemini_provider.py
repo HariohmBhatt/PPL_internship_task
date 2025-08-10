@@ -85,10 +85,25 @@ Make questions educational and appropriate for grade {grade_level}."""
                     raise Exception(f"Gemini API error: {response.status_code}")
                 
                 result = response.json()
+                # Log prompt and raw body at debug level (truncated)
+                try:
+                    logger.debug(
+                        "Gemini generate prompt",
+                        prompt_preview=prompt[:500] + ("…" if len(prompt) > 500 else ""),
+                    )
+                except Exception:
+                    pass
                 
                 # Extract text from Gemini response
                 if "candidates" in result and result["candidates"]:
                     content = result["candidates"][0]["content"]["parts"][0]["text"]
+                    try:
+                        logger.debug(
+                            "Gemini raw content",
+                            content_preview=content[:2000] + ("…" if len(content) > 2000 else ""),
+                        )
+                    except Exception:
+                        pass
                     
                     # Try to parse JSON from the content
                     # Sometimes Gemini wraps JSON in markdown code blocks
@@ -98,7 +113,23 @@ Make questions educational and appropriate for grade {grade_level}."""
                         content = content.split("```")[1].split("```")[0]
                     
                     questions = json.loads(content.strip())
-                    
+                    # Log a compact summary for each question at INFO
+                    try:
+                        for idx, q in enumerate(questions, start=1):
+                            qtext = q.get("question") or q.get("question_text") or ""
+                            qprev = qtext[:120] + ("…" if len(qtext) > 120 else "")
+                            logger.info(
+                                "Gemini question parsed",
+                                index=idx,
+                                type=q.get("type") or q.get("question_type"),
+                                topic=q.get("topic"),
+                                difficulty=q.get("difficulty"),
+                                points=q.get("points"),
+                                correct_answer=q.get("correct_answer"),
+                                question_preview=qprev,
+                            )
+                    except Exception:
+                        pass
                     logger.info("Generated questions with Gemini", count=len(questions))
                     return questions
                     
@@ -174,7 +205,16 @@ Return as JSON:
                     content = content.split("```")[1].split("```")[0]
                     
                 grading_result = json.loads(content.strip())
-                
+                try:
+                    logger.debug(
+                        "Gemini grade raw",
+                        question_preview=question[:120] + ("…" if len(question) > 120 else ""),
+                        correct_answer_preview=(correct_answer or "")[:120],
+                        student_answer_preview=(student_answer or "")[:200],
+                        result=grading_result,
+                    )
+                except Exception:
+                    pass
                 logger.info("Graded short answer with Gemini", points=grading_result.get("points_earned"))
                 return grading_result
                 
