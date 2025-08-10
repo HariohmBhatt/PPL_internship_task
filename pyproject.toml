@@ -98,3 +98,10 @@ addopts = [
     "--cov-fail-under=80"
 ]
 asyncio_mode = "auto"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["tests*", "test_*", "scripts*", "postman*", "docs*", "examples*"]
