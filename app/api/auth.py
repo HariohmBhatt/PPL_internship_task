@@ -38,8 +38,7 @@ async def login(
             expires_in=settings.jwt_expire_minutes * 60,  # Convert to seconds
         )
     
-    # Production authentication (commented out for now)
-    """
+    # Production authentication
     # Find user by username
     query = select(User).where(User.username == login_data.username)
     result = await db.execute(query)
@@ -62,7 +61,6 @@ async def login(
         token_type="bearer",
         expires_in=settings.jwt_expire_minutes * 60,
     )
-    """
 
 
 @router.post("/register", response_model=UserResponse)
