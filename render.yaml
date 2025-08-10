@@ -16,11 +16,6 @@ services:
         value: production
       - key: LOG_LEVEL
         value: INFO
-      - key: PORT
-        fromService:
-          type: web
-          name: ai-quiz-microservice
-          property: port
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
@@ -32,18 +27,19 @@ services:
           type: redis
           name: ai-quiz-redis
           property: connectionString
-      # You'll need to add these manually in Render dashboard:
-      # - OPENAI_API_KEY (your OpenAI API key)
-      # - GEMINI_API_KEY (your Gemini API key)
-      # - SMTP_USERNAME (your email)
-      # - SMTP_PASSWORD (your app password)
-      # - NOTIFICATION_FROM_EMAIL (your from email)
+      # Add your own in Render dashboard as needed:
+      # - OPENAI_API_KEY
+      # - GEMINI_API_KEY
+      # - NOTIFICATION_ENABLED=true
+      # - SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SMTP_USE_TLS, NOTIFICATION_FROM_EMAIL
 
   # Redis Service (for caching)
   - type: redis
     name: ai-quiz-redis
     plan: free
     maxmemoryPolicy: allkeys-lru
+    # Required: explicitly specify allow list (empty = internal only)
+    ipAllowList: []
 
 databases:
   # PostgreSQL Database
@@ -51,6 +47,8 @@ databases:
     plan: free
     databaseName: quiz_db
     user: quiz_user
+    # Required: explicitly specify allow list (empty = internal only)
+    ipAllowList: []
 
 # Note: Free tier limitations on Render:
 # - Web service: 750 hours/month, sleeps after 15 min of inactivity
