@@ -16,6 +16,8 @@ services:
         value: production
       - key: LOG_LEVEL
         value: INFO
+      - key: ALLOWED_ORIGINS
+        value: https://ai-quiz-frontend.onrender.com,https://ai-quiz-microservice.onrender.com
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
@@ -40,6 +42,13 @@ services:
     maxmemoryPolicy: allkeys-lru
     # Required: explicitly specify allow list (empty = internal only)
     ipAllowList: []
+
+  # Static Frontend (serves frontend/index.html)
+  - type: static
+    name: ai-quiz-frontend
+    buildCommand: ""
+    staticPublishPath: frontend
+    pullRequestPreviewsEnabled: false
 
 databases:
   # PostgreSQL Database

@@ -10,8 +10,13 @@ try {
   Write-Host "healthz:" (Get-Json $health)
   Write-Host "readyz :" (Get-Json $ready)
 
+#   Write-Host "`n== Register =="
+#   $reg=@{username='demo';email='hariohm.b@ahduni.edu.in';password='demo123'} | ConvertTo-Json
+#   Invoke-RestMethod -Uri "$base/auth/register" -Method POST -Headers @{ 'Content-Type'='application/json' } -Body $reg
+#   Write-Host "user registered"
+
   Write-Host "`n== Auth =="
-  $loginBody = @{ username = "demo"; password = "demo" } | ConvertTo-Json
+  $loginBody = @{ username = "demo"; password = "demo123" } | ConvertTo-Json
   $login = Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Headers @{ "Content-Type"="application/json" } -Body $loginBody
   $token = $login.access_token
   $authH = @{ Authorization = "Bearer $token"; "Content-Type"="application/json" }
