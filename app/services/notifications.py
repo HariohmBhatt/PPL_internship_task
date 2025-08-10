@@ -56,6 +56,12 @@ class NotificationService:
             return False
             
         try:
+            # validate target email
+            to_email = (user_email or "").strip()
+            if not to_email:
+                logger.warning("No user email provided; cannot send notification")
+                return False
+
             template_data = {
                 "user_name": user_name,
                 "quiz_title": quiz_title,
@@ -76,7 +82,7 @@ class NotificationService:
             text_content = self._render_quiz_result_text_template(template_data)
             
             await self._send_email(
-                to_email=user_email,
+                to_email=to_email,
                 subject=subject,
                 html_content=html_content,
                 text_content=text_content
@@ -84,7 +90,7 @@ class NotificationService:
             
             logger.info(
                 "Quiz result email sent successfully",
-                to_email=user_email,
+                to_email=to_email,
                 quiz_title=quiz_title,
                 score=score_percentage
             )
