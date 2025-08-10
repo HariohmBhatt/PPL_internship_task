@@ -268,21 +268,7 @@
             }
         }
 
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #5a67d8;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        /* Removed rotating loader UI from buttons */
 
         .hint-box {
             background: #fff5cd;
@@ -445,11 +431,11 @@
                         <label for="gradeLevel">Filter by Grade:</label>
                         <select id="gradeLevel">
                             <option value="">All Grades</option>
+                            <option value="6">Grade 6</option>
+                            <option value="7">Grade 7</option>
                             <option value="8">Grade 8</option>
                             <option value="9">Grade 9</option>
                             <option value="10">Grade 10</option>
-                            <option value="11">Grade 11</option>
-                            <option value="12">Grade 12</option>
                         </select>
                     </div>
                     <div style="display: flex; gap: 10px;">
@@ -561,47 +547,57 @@
         }
 
         async function apiCall(endpoint, method = 'GET', data = null) {
-            const config = {
+            const url = `${API_BASE}${endpoint}`;
+            const headers = { 'Content-Type': 'application/json' };
+            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+            const body = data ? JSON.stringify(data) : undefined;
+
+            const redactedHeaders = { ...headers };
+            if (redactedHeaders['Authorization']) redactedHeaders['Authorization'] = 'Bearer [REDACTED]';
+
+            const start = performance.now();
+            console.groupCollapsed(`[API] ${method} ${url}`);
+            console.log('Request', {
+                url,
                 method,
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            };
-
-            if (authToken) {
-                config.headers['Authorization'] = `Bearer ${authToken}`;
-            }
-
-            if (data) {
-                config.body = JSON.stringify(data);
-            }
+                headers: redactedHeaders,
+                body: data,
+            });
 
             try {
-                const response = await fetch(`${API_BASE}${endpoint}`, config);
-                const result = await response.json();
-                
+                const response = await fetch(url, { method, headers, body });
+                const durationMs = Math.round(performance.now() - start);
+                const responseHeaders = Object.fromEntries(response.headers.entries());
+                const text = await response.text();
+                let parsed;
+                try { parsed = text ? JSON.parse(text) : null; } catch { parsed = text; }
+
+                console.log('Response', {
+                    status: response.status,
+                    ok: response.ok,
+                    headers: responseHeaders,
+                    duration_ms: durationMs,
+                    body: parsed,
+                });
+
                 if (!response.ok) {
                     let errorMessage = 'API Error';
-                    
-                    if (result.error?.message) {
-                        errorMessage = typeof result.error.message === 'string' ? result.error.message : JSON.stringify(result.error.message);
-                    } else if (result.detail) {
-                        errorMessage = typeof result.detail === 'string' ? result.detail : JSON.stringify(result.detail);
+                    if (parsed?.error?.message) {
+                        errorMessage = typeof parsed.error.message === 'string' ? parsed.error.message : JSON.stringify(parsed.error.message);
+                    } else if (parsed?.detail) {
+                        errorMessage = typeof parsed.detail === 'string' ? parsed.detail : JSON.stringify(parsed.detail);
+                    } else if (typeof parsed === 'string' && parsed) {
+                        errorMessage = parsed;
                     }
-                    
                     throw new Error(errorMessage);
                 }
-                
-                return result;
+
+                return parsed;
             } catch (error) {
-                console.error('API Error:', error);
-                
-                // Ensure error message is always a string
-                if (error.message && typeof error.message === 'object') {
-                    error.message = JSON.stringify(error.message);
-                }
-                
+                console.error('API Call Failed', { url, method, error: error?.message || error });
                 throw error;
+            } finally {
+                console.groupEnd();
             }
         }
 

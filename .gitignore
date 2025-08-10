@@ -1,0 +1,20 @@
+# Ignore local interview answer docs (large, prose-heavy)
+docs/interview_answers/**
+
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+
+QUESTIONS.txt

@@ -1,5 +1,12 @@
 # test-live.ps1
-$base = "https://ai-quiz-microservice.onrender.com"
+
+Param(
+  [string]$Base = "https://ai-quiz-microservice.onrender.com",
+  [string]$Email = "",
+  [string]$Username = "demo"
+)
+
+$base = $Base
 
 function Get-Json($obj) { $obj | ConvertTo-Json -Depth 6 }
 
@@ -10,13 +17,29 @@ try {
   Write-Host "healthz:" (Get-Json $health)
   Write-Host "readyz :" (Get-Json $ready)
 
-#   Write-Host "`n== Register =="
-#   $reg=@{username='demo';email='hariohm.b@ahduni.edu.in';password='demo123'} | ConvertTo-Json
-#   Invoke-RestMethod -Uri "$base/auth/register" -Method POST -Headers @{ 'Content-Type'='application/json' } -Body $reg
-#   Write-Host "user registered"
+  # Determine email for registration
+  if (-not $Email -or $Email.Trim().Length -eq 0) {
+    $Email = $env:TEST_EMAIL
+  }
+  if (-not $Email -or $Email.Trim().Length -eq 0) {
+    $Email = "hariohm.b@ahduni.edu.in"
+  }
+
+  Write-Host "`n== Register (ensures user with email exists) =="
+  $reg=@{username=$Username;email=$Email;password='demo123'} | ConvertTo-Json
+  try {
+    Invoke-RestMethod -Uri "$base/auth/register" -Method POST -Headers @{ 'Content-Type'='application/json' } -Body $reg | Out-Null
+    Write-Host "user registered"
+  }
+  catch {
+    # If already exists (409), continue
+    $code = $_.Exception.Response.StatusCode.value__
+    if ($code -eq 409) { Write-Host "user already exists; continuing" }
+    else { throw }
+  }
 
   Write-Host "`n== Auth =="
-  $loginBody = @{ username = "demo"; password = "demo123" } | ConvertTo-Json
+  $loginBody = @{ username = $Username; password = "demo123" } | ConvertTo-Json
   $login = Invoke-RestMethod -Uri "$base/auth/login" -Method POST -Headers @{ "Content-Type"="application/json" } -Body $loginBody
   $token = $login.access_token
   $authH = @{ Authorization = "Bearer $token"; "Content-Type"="application/json" }
@@ -49,6 +72,8 @@ try {
   $submitBody = @{ answers = $answers; time_taken_minutes = 1 } | ConvertTo-Json -Depth 5
   $result = Invoke-RestMethod -Uri "$base/quizzes/$quizId/submit" -Method POST -Headers $authH -Body $submitBody
   Write-Host "score:" $([math]::Round($result.percentage,1)) "%"
+  Write-Host "email: server will send results to the email registered for user" $Username 
+  Write-Host "hint : you provided -Email=$Email; ensure it matches the registered email for $Username (unique per server)."
 
   Write-Host "`n== Retry Quiz =="
   $retry = Invoke-RestMethod -Uri "$base/quizzes/$quizId/retry" -Method POST -Headers $authH -Body (@{reason="test"} | ConvertTo-Json)
