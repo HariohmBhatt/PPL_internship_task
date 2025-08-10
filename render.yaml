@@ -44,8 +44,9 @@ services:
     ipAllowList: []
 
   # Static Frontend (serves frontend/index.html)
-  - type: static
+  - type: web
     name: ai-quiz-frontend
+    env: static
     buildCommand: ""
     staticPublishPath: frontend
     pullRequestPreviewsEnabled: false
