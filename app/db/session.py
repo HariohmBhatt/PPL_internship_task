@@ -6,6 +6,20 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
+
+
+def _coerce_db_url(url: str) -> str:
+    """Normalize DATABASE_URL to use psycopg3 driver and correct scheme.
+
+    Render/Postgres URLs are often provided as postgres:// or postgresql:// without
+    an explicit driver. SQLAlchemy defaults that to psycopg2, which is not installed.
+    Force psycopg3 by rewriting to postgresql+psycopg://.
+    """
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    if url.startswith("postgresql://") and "+psycopg" not in url and "+asyncpg" not in url:
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return url
 from app.models.base import Base
 
 # Global engine and session factory
@@ -19,10 +33,13 @@ def get_engine():
     if _engine is None:
         settings = get_settings()
         database_url = (
-            settings.database_url_test 
-            if settings.is_testing 
+            settings.database_url_test
+            if settings.is_testing
             else settings.database_url
         )
+
+        # Ensure correct driver (psycopg3) is used in production/staging
+        database_url = _coerce_db_url(database_url)
         
         _engine = create_async_engine(
             database_url,
