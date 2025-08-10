@@ -6,10 +6,10 @@ from typing import Optional
 from sqlalchemy import Column, DateTime, Float, Integer, String, text
 from sqlalchemy.ext.hybrid import hybrid_property
 
-from app.models.base import BaseModel
+from app.models.base import Base
 
 
-class LeaderboardEntry(BaseModel):
+class LeaderboardEntry(Base):
     """Model for leaderboard entries.
     
     This is a view-like model that aggregates user performance data.

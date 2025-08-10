@@ -14,6 +14,7 @@ from app.models.submission import Submission
 from app.models.answer import Answer
 from app.models.evaluation import Evaluation
 from app.models.retry import Retry
+from app.models.user import User
 from app.schemas.auth import CurrentUser
 from app.schemas.quiz import QuizCreate, QuizResponse, QuizSummary, QuizRetryRequest, QuizRetryResponse
 from app.schemas.question import QuestionResponse
@@ -296,8 +297,14 @@ async def submit_quiz(
     
     # Send email notification
     try:
+        # Get user email from database
+        user_query = select(User).where(User.id == current_user.id)
+        user_result = await db.execute(user_query)
+        user = user_result.scalar_one_or_none()
+        user_email = user.email if user else ""
+        
         await notification_service.send_quiz_result_email(
-            user_email=current_user.email,
+            user_email=user_email,
             user_name=current_user.username,
             quiz_title=quiz.title,
             score_percentage=evaluation_data["percentage"],

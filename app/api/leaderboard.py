@@ -6,8 +6,7 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_db, get_current_user
-from app.models.user import User
+from app.core.deps import DBSession, AuthUser
 from app.schemas.leaderboard import (
     LeaderboardQuery,
     LeaderboardResponse,
@@ -23,6 +22,8 @@ router = APIRouter()
 
 @router.get("/leaderboard", response_model=LeaderboardResponse)
 async def get_leaderboard(
+    current_user: AuthUser,
+    db: DBSession,
     subject: str = Query(..., description="Subject to filter by", examples=["Mathematics", "Science"]),
     grade_level: str = Query(..., description="Grade level to filter by", examples=["8", "9", "10"]),
     limit: int = Query(default=10, ge=1, le=100, description="Number of top entries to return"),
@@ -31,9 +32,7 @@ async def get_leaderboard(
         description="Ranking criteria",
         regex="^(best_percentage|average_score|activity_score|total_quizzes)$"
     ),
-    db: AsyncSession = Depends(get_db),
     cache: CacheService = Depends(get_cache),
-    current_user: User = Depends(get_current_user),
 ) -> LeaderboardResponse:
     """
     Get leaderboard for specific subject and grade level.
@@ -93,11 +92,11 @@ async def get_leaderboard(
 
 @router.get("/leaderboard/my-rank", response_model=UserRankResponse)
 async def get_my_rank(
+    current_user: AuthUser,
+    db: DBSession,
     subject: str = Query(..., description="Subject to check rank for"),
     grade_level: str = Query(..., description="Grade level to check rank for"),
-    db: AsyncSession = Depends(get_db),
     cache: CacheService = Depends(get_cache),
-    current_user: User = Depends(get_current_user),
 ) -> UserRankResponse:
     """
     Get current user's ranking in the leaderboard.
@@ -156,8 +155,8 @@ async def get_my_rank(
 
 @router.get("/leaderboard/subjects", response_model=list[str])
 async def get_available_subjects(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: AuthUser,
+    db: DBSession,
 ) -> list[str]:
     """
     Get list of available subjects in the leaderboard.
@@ -190,9 +189,9 @@ async def get_available_subjects(
 
 @router.get("/leaderboard/grades", response_model=list[str])
 async def get_available_grades(
+    current_user: AuthUser,
+    db: DBSession,
     subject: Optional[str] = Query(None, description="Filter grades by subject"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ) -> list[str]:
     """
     Get list of available grade levels in the leaderboard.

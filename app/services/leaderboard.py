@@ -1,6 +1,6 @@
 """Leaderboard service for managing quiz rankings."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 import structlog
@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.leaderboard import LeaderboardEntry
 from app.models.quiz import Quiz
 from app.models.submission import Submission
+from app.models.evaluation import Evaluation
 from app.models.user import User
 from app.schemas.leaderboard import (
     LeaderboardEntryResponse,
@@ -80,7 +81,7 @@ class LeaderboardService:
         query = LeaderboardQuery(
             subject=subject,
             grade_level=grade_level,
-            limit=1000,  # Get more entries for accurate ranking
+            limit=100,  # Respect schema limit and fetch enough entries for ranking
             ranking_type="best_percentage"
         )
         
@@ -230,14 +231,15 @@ class LeaderboardService:
                 func.max(Submission.total_score).label("best_score"),
                 func.avg(Submission.total_score).label("average_score"),
                 func.count(Submission.id).label("total_quizzes"),
-                func.sum(Submission.total_questions).label("total_questions_answered"),
-                func.sum(Submission.correct_answers).label("total_correct_answers"),
+                func.sum(Evaluation.total_questions).label("total_questions_answered"),
+                func.sum(Evaluation.correct_answers).label("total_correct_answers"),
                 func.min(Submission.submitted_at).label("first_quiz_date"),
                 func.max(Submission.submitted_at).label("last_quiz_date"),
             )
             .select_from(
                 User.__table__
                 .join(Submission.__table__, User.id == Submission.user_id)
+                .join(Evaluation.__table__, Evaluation.submission_id == Submission.id)
                 .join(Quiz.__table__, Submission.quiz_id == Quiz.id)
             )
             .where(
@@ -254,6 +256,12 @@ class LeaderboardService:
         rows = result.fetchall()
         
         leaderboard_data = []
+        now_utc = datetime.now(timezone.utc)
+
+        def _as_aware(dt: datetime) -> datetime:
+            if dt is None:
+                return now_utc
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
         for row in rows:
             # Calculate derived metrics
             accuracy_percentage = 0.0
@@ -261,7 +269,7 @@ class LeaderboardService:
                 accuracy_percentage = (row.total_correct_answers / row.total_questions_answered) * 100
             
             # Calculate activity score
-            days_since_last = (datetime.utcnow() - row.last_quiz_date).days if row.last_quiz_date else 0
+            days_since_last = (now_utc - _as_aware(row.last_quiz_date)).days if row.last_quiz_date else 0
             base_score = min(row.total_quizzes * 10, 100)
             recency_multiplier = max(0.5, 1.0 - (days_since_last / 30))
             activity_score = base_score * recency_multiplier
@@ -277,8 +285,8 @@ class LeaderboardService:
                 "total_correct_answers": row.total_correct_answers or 0,
                 "accuracy_percentage": accuracy_percentage,
                 "activity_score": activity_score,
-                "first_quiz_date": row.first_quiz_date or datetime.utcnow(),
-                "last_quiz_date": row.last_quiz_date or datetime.utcnow(),
+                "first_quiz_date": _as_aware(row.first_quiz_date) if row.first_quiz_date else now_utc,
+                "last_quiz_date": _as_aware(row.last_quiz_date) if row.last_quiz_date else now_utc,
             })
         
         return leaderboard_data
