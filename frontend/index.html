@@ -833,6 +833,15 @@
                 console.log('Submitting quiz data:', submissionData);
                 
                 const results = await apiCall(`/quizzes/${currentQuiz.id}/submit`, 'POST', submissionData);
+                // Email notification visibility for console
+                if (typeof results.notification_attempted !== 'undefined') {
+                    console.groupCollapsed('[Email] Notification summary');
+                    console.log('Enabled:', results.notification_enabled);
+                    console.log('Attempted:', results.notification_attempted);
+                    console.log('Sent:', results.notification_sent);
+                    if (results.notification_sent) console.log('To:', results.notification_to_email);
+                    console.groupEnd();
+                }
                 
                 console.log('Quiz submission results:', results);
                 displayResults(results);

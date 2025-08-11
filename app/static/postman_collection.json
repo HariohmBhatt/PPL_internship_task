@@ -1,0 +1,338 @@
+{
+  "info": {
+    "name": "AI Quiz Microservice",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for AI Quiz Microservice. Use environment variables BASE_URL and TOKEN."
+  },
+  "variable": [
+    { "key": "BASE_URL", "value": "http://localhost:8000", "type": "string" },
+    { "key": "TOKEN", "value": "", "type": "string" },
+    { "key": "quiz_id", "value": "", "type": "string" },
+    { "key": "question_id", "value": "", "type": "string" },
+    { "key": "subject", "value": "Mathematics", "type": "string" },
+    { "key": "grade_level", "value": "8", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /healthz",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{BASE_URL}}/healthz", "host": ["{{BASE_URL}}"], "path": ["healthz"] }
+          },
+          "response": [
+            {
+              "name": "OK",
+              "originalRequest": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/healthz" } },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"status\": \"healthy\",\n  \"service\": \"ai-quiz-microservice\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /readyz",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{BASE_URL}}/readyz", "host": ["{{BASE_URL}}"], "path": ["readyz"] }
+          },
+          "response": [
+            {
+              "name": "OK",
+              "originalRequest": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/readyz" } },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"status\": \"ready\",\n  \"database\": \"connected\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/login",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo\",\n  \"password\": \"demo\"\n}"
+            },
+            "url": { "raw": "{{BASE_URL}}/auth/login", "host": ["{{BASE_URL}}"], "path": ["auth", "login"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.access_token) { pm.environment.set('TOKEN', data.access_token); }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "OK",
+              "originalRequest": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{BASE_URL}}/auth/login" } },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"access_token\": \"eyJ.mock.token\",\n  \"token_type\": \"bearer\",\n  \"expires_in\": 86400\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/register (dev)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"student1\",\n  \"email\": \"student1@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": { "raw": "{{BASE_URL}}/auth/register", "host": ["{{BASE_URL}}"], "path": ["auth", "register"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Quizzes",
+      "item": [
+        {
+          "name": "POST /quizzes (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Mathematics\",\n  \"grade_level\": \"8\",\n  \"num_questions\": 3,\n  \"difficulty\": \"medium\",\n  \"topics\": [\"algebra\", \"geometry\"],\n  \"question_types\": [\"MCQ\", \"short_answer\"],\n  \"standard\": \"Common Core\",\n  \"adaptive\": false\n}"
+            },
+            "url": { "raw": "{{BASE_URL}}/quizzes", "host": ["{{BASE_URL}}"], "path": ["quizzes"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.id) { pm.environment.set('quiz_id', data.id); }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /quizzes/:quiz_id",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{TOKEN}}" } ],
+            "url": { "raw": "{{BASE_URL}}/quizzes/{{quiz_id}}", "host": ["{{BASE_URL}}"], "path": ["quizzes", "{{quiz_id}}"] }
+          }
+        },
+        {
+          "name": "GET /quizzes/:quiz_id/questions",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{TOKEN}}" } ],
+            "url": { "raw": "{{BASE_URL}}/quizzes/{{quiz_id}}/questions", "host": ["{{BASE_URL}}"], "path": ["quizzes", "{{quiz_id}}", "questions"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "try {",
+                  "  const arr = pm.response.json();",
+                  "  if (Array.isArray(arr) && arr.length) { pm.environment.set('question_id', arr[0].id); }",
+                  "} catch (e) {}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /quizzes/:quiz_id/submit",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": [\n    { \"question_id\": 1, \"selected_option\": \"Option A\", \"time_spent_seconds\": 25 },\n    { \"question_id\": 2, \"answer_text\": \"Short explanation...\" }\n  ],\n  \"time_taken_minutes\": 12\n}"
+            },
+            "url": { "raw": "{{BASE_URL}}/quizzes/{{quiz_id}}/submit", "host": ["{{BASE_URL}}"], "path": ["quizzes", "{{quiz_id}}", "submit"] }
+          }
+        },
+        {
+          "name": "POST /quizzes/:quiz_id/retry",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Practice again\"\n}" },
+            "url": { "raw": "{{BASE_URL}}/quizzes/{{quiz_id}}/retry", "host": ["{{BASE_URL}}"], "path": ["quizzes", "{{quiz_id}}", "retry"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hints",
+      "item": [
+        {
+          "name": "POST /quizzes/:quiz_id/questions/:question_id/hint",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Authorization", "value": "Bearer {{TOKEN}}" }, { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{BASE_URL}}/quizzes/{{quiz_id}}/questions/{{question_id}}/hint", "host": ["{{BASE_URL}}"], "path": ["quizzes", "{{quiz_id}}", "questions", "{{question_id}}", "hint"] }
+          }
+        },
+        {
+          "name": "DELETE /quizzes/:quiz_id/questions/:question_id/hint-usage",
+          "request": {
+            "method": "DELETE",
+            "header": [ { "key": "Authorization", "value": "Bearer {{TOKEN}}" } ],
+            "url": { "raw": "{{BASE_URL}}/quizzes/{{quiz_id}}/questions/{{question_id}}/hint-usage", "host": ["{{BASE_URL}}"], "path": ["quizzes", "{{quiz_id}}", "questions", "{{question_id}}", "hint-usage"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Adaptive",
+      "item": [
+        {
+          "name": "POST /quizzes/:quiz_id/next",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Authorization", "value": "Bearer {{TOKEN}}" }, { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{BASE_URL}}/quizzes/{{quiz_id}}/next", "host": ["{{BASE_URL}}"], "path": ["quizzes", "{{quiz_id}}", "next"] }
+          }
+        },
+        {
+          "name": "GET /quizzes/:quiz_id/adaptive-status",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{TOKEN}}" } ],
+            "url": { "raw": "{{BASE_URL}}/quizzes/{{quiz_id}}/adaptive-status", "host": ["{{BASE_URL}}"], "path": ["quizzes", "{{quiz_id}}", "adaptive-status"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "History",
+      "item": [
+        {
+          "name": "GET /quiz-history",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{TOKEN}}" } ],
+            "url": {
+              "raw": "{{BASE_URL}}/quiz-history?subject={{subject}}&grade={{grade_level}}&min_marks=60&limit=20&offset=0",
+              "host": ["{{BASE_URL}}"],
+              "path": ["quiz-history"],
+              "query": [
+                { "key": "subject", "value": "{{subject}}" },
+                { "key": "grade", "value": "{{grade_level}}" },
+                { "key": "min_marks", "value": "60" },
+                { "key": "limit", "value": "20" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leaderboard",
+      "item": [
+        {
+          "name": "GET /leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{TOKEN}}" } ],
+            "url": {
+              "raw": "{{BASE_URL}}/leaderboard?subject={{subject}}&grade_level={{grade_level}}&limit=10&ranking_type=best_percentage",
+              "host": ["{{BASE_URL}}"],
+              "path": ["leaderboard"],
+              "query": [
+                { "key": "subject", "value": "{{subject}}" },
+                { "key": "grade_level", "value": "{{grade_level}}" },
+                { "key": "limit", "value": "10" },
+                { "key": "ranking_type", "value": "best_percentage" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /leaderboard/my-rank",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{TOKEN}}" } ],
+            "url": {
+              "raw": "{{BASE_URL}}/leaderboard/my-rank?subject={{subject}}&grade_level={{grade_level}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["leaderboard", "my-rank"],
+              "query": [
+                { "key": "subject", "value": "{{subject}}" },
+                { "key": "grade_level", "value": "{{grade_level}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /leaderboard/subjects",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{TOKEN}}" } ],
+            "url": { "raw": "{{BASE_URL}}/leaderboard/subjects", "host": ["{{BASE_URL}}"], "path": ["leaderboard", "subjects"] }
+          }
+        },
+        {
+          "name": "GET /leaderboard/grades",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{TOKEN}}" } ],
+            "url": {
+              "raw": "{{BASE_URL}}/leaderboard/grades?subject={{subject}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["leaderboard", "grades"],
+              "query": [ { "key": "subject", "value": "{{subject}}" } ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Root",
+      "item": [
+        {
+          "name": "GET /",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/", "host": ["{{BASE_URL}}"], "path": [""] } }
+        }
+      ]
+    }
+  ]
+}
+
+

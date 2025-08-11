@@ -2,9 +2,12 @@
 
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
+import json
+from pathlib import Path
 
 import structlog
 from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -79,6 +82,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static files (serve Postman collection and other assets)
+static_dir = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
 # Custom exception handler to ensure CORS headers are always present
@@ -287,6 +294,22 @@ app.include_router(leaderboard.router, tags=["Leaderboard"])
 async def root() -> dict[str, str]:
     """Root endpoint."""
     return {"message": "AI Quiz Microservice", "version": "0.1.0"}
+
+
+@app.get("/postman-collection", include_in_schema=False)
+async def get_postman_collection() -> JSONResponse:
+    """Serve the Postman collection JSON.
+
+    Also available at /static/postman_collection.json
+    """
+    collection_file = static_dir / "postman_collection.json"
+    if not collection_file.exists():
+        return JSONResponse(status_code=404, content={"detail": "Postman collection not found"})
+    try:
+        data = json.loads(collection_file.read_text(encoding="utf-8"))
+        return JSONResponse(status_code=200, content=data)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"detail": f"Failed to read collection: {e}"})
 
 
 if __name__ == "__main__":

@@ -80,6 +80,12 @@ class SubmissionEvaluation(BaseSchema):
     time_taken_minutes: Optional[int] = None
     submitted_at: datetime
 
+    # Notification metadata (optional)
+    notification_attempted: Optional[bool] = None
+    notification_enabled: Optional[bool] = None
+    notification_sent: Optional[bool] = None
+    notification_to_email: Optional[str] = None
+
 
 class SubmissionSummary(BaseSchema):
     """Schema for submission summary in history."""

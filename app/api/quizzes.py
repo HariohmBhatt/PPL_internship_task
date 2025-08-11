@@ -295,15 +295,19 @@ async def submit_quiz(
     except Exception as e:
         logger.error("Failed to update leaderboard", error=str(e), quiz_id=quiz_id, user_id=current_user.id)
     
-    # Send email notification
+    # Send email notification and enrich response metadata
+    notification_attempted = False
+    notification_sent = False
+    notification_to_email = ""
     try:
         # Get user email from database
         user_query = select(User).where(User.id == current_user.id)
         user_result = await db.execute(user_query)
         user = user_result.scalar_one_or_none()
         user_email = user.email if user else ""
-        
-        await notification_service.send_quiz_result_email(
+
+        notification_attempted = True
+        notification_sent = await notification_service.send_quiz_result_email(
             user_email=user_email,
             user_name=current_user.username,
             quiz_title=quiz.title,
@@ -317,6 +321,7 @@ async def submit_quiz(
             strengths=evaluation_data.get("strengths"),
             weaknesses=evaluation_data.get("weaknesses")
         )
+        notification_to_email = user_email
     except Exception as e:
         logger.error("Failed to send notification email", error=str(e), user_id=current_user.id)
     
@@ -327,6 +332,14 @@ async def submit_quiz(
         score=evaluation_data["percentage"]
     )
     
+    # Attach notification metadata for frontend visibility
+    evaluation_data["notification_attempted"] = notification_attempted
+    from app.core.config import get_settings
+    settings = get_settings()
+    evaluation_data["notification_enabled"] = settings.notification_enabled
+    evaluation_data["notification_sent"] = notification_sent
+    evaluation_data["notification_to_email"] = notification_to_email
+
     return SubmissionEvaluation.model_validate(evaluation_data)
 
 
