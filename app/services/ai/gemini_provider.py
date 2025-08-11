@@ -7,6 +7,7 @@ import httpx
 import structlog
 
 from app.services.ai.provider import AIProvider
+from app.core.config import get_settings
 
 logger = structlog.get_logger()
 
@@ -14,11 +15,13 @@ logger = structlog.get_logger()
 class GeminiProvider(AIProvider):
     """Google Gemini AI provider for quiz generation and grading."""
     
-    def __init__(self, api_key: str):
-        """Initialize Gemini provider with API key."""
+    def __init__(self, api_key: str, model: str | None = None, fallback_model: str | None = None):
+        """Initialize Gemini provider with API key and models."""
         self.api_key = api_key
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
-        self.model = "gemini-1.5-flash"
+        settings = get_settings()
+        self.model = model or settings.gemini_model
+        self.fallback_model = fallback_model or settings.gemini_fallback_model
     
     async def generate_questions(
         self,
@@ -79,10 +82,21 @@ Make questions educational and appropriate for grade {grade_level}."""
                     },
                     timeout=30.0
                 )
-                
+
                 if response.status_code != 200:
-                    logger.error("Gemini API error", status_code=response.status_code, response=response.text)
-                    raise Exception(f"Gemini API error: {response.status_code}")
+                    logger.warning("Gemini API error - trying fallback model", status_code=response.status_code, primary_model=self.model)
+                    fallback_resp = await client.post(
+                        f"{self.base_url}/models/{self.fallback_model}:generateContent?key={self.api_key}",
+                        json={
+                            "contents": [{"parts": [{"text": prompt}]}],
+                            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 2048}
+                        },
+                        timeout=30.0
+                    )
+                    if fallback_resp.status_code != 200:
+                        logger.error("Gemini fallback model failed", status_code=fallback_resp.status_code, fallback_model=self.fallback_model)
+                        raise Exception(f"Gemini API error: {fallback_resp.status_code}")
+                    response = fallback_resp
                 
                 result = response.json()
                 # Log prompt and raw body at debug level (truncated)
@@ -190,10 +204,21 @@ Return as JSON:
                     },
                     timeout=15.0
                 )
-                
+
                 if response.status_code != 200:
-                    logger.error("Gemini grading API error", status_code=response.status_code)
-                    raise Exception(f"Gemini API error: {response.status_code}")
+                    logger.warning("Gemini grading API error - trying fallback model", status_code=response.status_code, primary_model=self.model)
+                    fallback_resp = await client.post(
+                        f"{self.base_url}/models/{self.fallback_model}:generateContent?key={self.api_key}",
+                        json={
+                            "contents": [{"parts": [{"text": prompt}]}],
+                            "generationConfig": {"temperature": 0.3, "maxOutputTokens": 512}
+                        },
+                        timeout=15.0
+                    )
+                    if fallback_resp.status_code != 200:
+                        logger.error("Gemini grading fallback failed", status_code=fallback_resp.status_code, fallback_model=self.fallback_model)
+                        raise Exception(f"Gemini API error: {fallback_resp.status_code}")
+                    response = fallback_resp
                 
                 result = response.json()
                 content = result["candidates"][0]["content"]["parts"][0]["text"]

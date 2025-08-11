@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     # AI Configuration
     openai_api_key: str = Field(default="", env="OPENAI_API_KEY")
     gemini_api_key: str = Field(default="", env="GEMINI_API_KEY")
+    gemini_model: str = Field(default="gemini-1.5-flash", env="GEMINI_MODEL")
+    gemini_fallback_model: str = Field(default="gemini-2.0-flash-lite", env="GEMINI_FALLBACK_MODEL")
     
     # Environment
     env: str = Field(default="dev", env="ENV")
