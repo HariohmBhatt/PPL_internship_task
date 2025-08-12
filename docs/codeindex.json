@@ -1,0 +1,152 @@
+[
+  {
+    "requirement": "Authentication",
+    "endpoint": ["POST /auth/login", "POST /auth/register"],
+    "files": [
+      {"path": "app/api/auth.py", "symbols": ["login", "register"]},
+      {"path": "app/core/security.py", "symbols": ["create_access_token", "verify_password", "hash_password"]},
+      {"path": "app/core/deps.py", "symbols": ["get_current_user"]},
+      {"path": "app/core/config.py", "symbols": ["Settings.jwt_secret", "Settings.jwt_expire_minutes"]}
+    ],
+    "env_vars": ["JWT_SECRET", "JWT_ALGORITHM", "JWT_EXPIRE_MINUTES"],
+    "status": "implemented"
+  },
+  {
+    "requirement": "Quiz Lifecycle",
+    "endpoint": [
+      "POST /quizzes",
+      "GET /quizzes/{quiz_id}",
+      "GET /quizzes/{quiz_id}/questions",
+      "POST /quizzes/{quiz_id}/submit"
+    ],
+    "files": [
+      {"path": "app/api/quizzes.py", "symbols": ["create_quiz", "get_quiz", "get_quiz_questions", "submit_quiz", "retry_quiz"]},
+      {"path": "app/services/grading.py", "symbols": ["GradingService.grade_submission"]},
+      {"path": "app/services/ai/provider.py", "symbols": ["get_ai_provider"]},
+      {"path": "app/schemas/quiz.py", "symbols": ["QuizCreate", "QuizResponse"]},
+      {"path": "app/schemas/submission.py", "symbols": ["QuizSubmission", "SubmissionEvaluation"]}
+    ],
+    "env_vars": ["CACHE_ENABLED", "CACHE_TTL_SECONDS", "REDIS_URL"],
+    "status": "implemented"
+  },
+  {
+    "requirement": "Retry",
+    "endpoint": ["POST /quizzes/{quiz_id}/retry"],
+    "files": [
+      {"path": "app/api/quizzes.py", "symbols": ["retry_quiz"]},
+      {"path": "app/models/retry.py", "symbols": ["Retry"]},
+      {"path": "app/schemas/quiz.py", "symbols": ["QuizRetryRequest", "QuizRetryResponse"]}
+    ],
+    "env_vars": [],
+    "status": "implemented"
+  },
+  {
+    "requirement": "Hints",
+    "endpoint": ["POST /quizzes/{quiz_id}/questions/{question_id}/hint", "DELETE /quizzes/{quiz_id}/questions/{question_id}/hint-usage"],
+    "files": [
+      {"path": "app/api/hints.py", "symbols": ["get_hint", "reset_hint_usage"]},
+      {"path": "app/services/ai/provider.py", "symbols": ["AIProvider.hint", "get_ai_provider"]}
+    ],
+    "env_vars": ["HINT_RATE_LIMIT_PER_USER_QUESTION"],
+    "status": "implemented"
+  },
+  {
+    "requirement": "Adaptive",
+    "endpoint": ["POST /quizzes/{quiz_id}/next", "GET /quizzes/{quiz_id}/adaptive-status"],
+    "files": [
+      {"path": "app/api/adaptive.py", "symbols": ["get_next_question", "get_adaptive_status"]},
+      {"path": "app/services/adaptive.py", "symbols": ["AdaptiveService"]}
+    ],
+    "env_vars": [],
+    "status": "implemented"
+  },
+  {
+    "requirement": "History & Filters",
+    "endpoint": ["GET /quiz-history"],
+    "files": [
+      {"path": "app/api/history.py", "symbols": ["get_quiz_history"]},
+      {"path": "app/services/datetime.py", "symbols": ["parse_date_range"]}
+    ],
+    "env_vars": [],
+    "status": "implemented"
+  },
+  {
+    "requirement": "AI Providers & Suggestions",
+    "endpoint": ["POST /quizzes", "POST /quizzes/{quiz_id}/submit", "POST /quizzes/{quiz_id}/questions/{question_id}/hint"],
+    "files": [
+      {"path": "app/services/ai/provider.py", "symbols": ["AIProvider", "get_ai_provider"]},
+      {"path": "app/services/ai/openai_provider.py", "symbols": ["OpenAIProvider"]},
+      {"path": "app/services/ai/gemini_provider.py", "symbols": ["GeminiProvider"]},
+      {"path": "app/services/ai/mock.py", "symbols": ["MockProvider"]},
+      {"path": "app/services/grading.py", "symbols": ["GradingService.grade_submission"]}
+    ],
+    "env_vars": ["OPENAI_API_KEY", "GEMINI_API_KEY", "GEMINI_MODEL", "GEMINI_FALLBACK_MODEL", "ENV"],
+    "status": "implemented"
+  },
+  {
+    "requirement": "Database & Migrations",
+    "endpoint": [],
+    "files": [
+      {"path": "app/models/*.py", "symbols": ["User", "Quiz", "Question", "Submission", "Answer", "Evaluation", "Retry", "LeaderboardEntry"]},
+      {"path": "app/db/migrations/versions/001_initial_migration.py", "symbols": ["upgrade", "downgrade"]},
+      {"path": "app/db/migrations/versions/002_add_leaderboard.py", "symbols": ["upgrade", "downgrade"]},
+      {"path": "scripts/create_schema.sql", "symbols": []}
+    ],
+    "env_vars": ["DATABASE_URL"],
+    "status": "implemented"
+  },
+  {
+    "requirement": "Health/Readiness",
+    "endpoint": ["GET /healthz", "GET /readyz"],
+    "files": [
+      {"path": "app/api/health.py", "symbols": ["health_check", "readiness_check"]}
+    ],
+    "env_vars": [],
+    "status": "implemented"
+  },
+  {
+    "requirement": "Config",
+    "endpoint": [],
+    "files": [
+      {"path": "app/core/config.py", "symbols": ["Settings", "cors_origins", "is_development", "is_testing", "is_production"]},
+      {"path": ".env.example", "symbols": []}
+    ],
+    "env_vars": ["JWT_SECRET", "DATABASE_URL", "ALLOWED_ORIGINS", "ENV", "LOG_LEVEL", "OPENAI_API_KEY", "GEMINI_API_KEY", "REDIS_URL", "CACHE_ENABLED", "CACHE_TTL_SECONDS", "NOTIFICATION_*", "SMTP_*"],
+    "status": "implemented"
+  },
+  {
+    "requirement": "Hosting",
+    "endpoint": [],
+    "files": [
+      {"path": "Dockerfile", "symbols": []},
+      {"path": "docker-compose.yml", "symbols": []},
+      {"path": "render.yaml", "symbols": []},
+      {"path": "start.py", "symbols": []},
+      {"path": "start.sh", "symbols": []}
+    ],
+    "env_vars": ["DATABASE_URL", "JWT_SECRET", "ALLOWED_ORIGINS", "OPENAI_API_KEY", "GEMINI_API_KEY", "REDIS_URL", "ENV"],
+    "status": "implemented"
+  },
+  {
+    "requirement": "Postman/Docs",
+    "endpoint": ["GET /postman-collection", "GET /static/postman_collection.json"],
+    "files": [
+      {"path": "app/main.py", "symbols": ["get_postman_collection", "app.mount('/static', ...)"]},
+      {"path": "app/static/postman_collection.json", "symbols": []},
+      {"path": "README.md", "symbols": []}
+    ],
+    "env_vars": [],
+    "status": "implemented"
+  },
+  {
+    "requirement": "Bonus: Leaderboard/Cache/Email",
+    "endpoint": ["GET /leaderboard", "GET /leaderboard/my-rank", "GET /leaderboard/subjects", "GET /leaderboard/grades"],
+    "files": [
+      {"path": "app/api/leaderboard.py", "symbols": ["get_leaderboard", "get_my_rank", "get_available_subjects", "get_available_grades"]},
+      {"path": "app/services/cache.py", "symbols": ["CacheService", "get_cache"]},
+      {"path": "app/services/notifications.py", "symbols": ["notification_service", "send_quiz_result_email"]}
+    ],
+    "env_vars": ["REDIS_URL", "CACHE_ENABLED", "CACHE_TTL_SECONDS", "NOTIFICATION_ENABLED", "SMTP_*"],
+    "status": "implemented"
+  }
+]
