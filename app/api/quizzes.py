@@ -2,12 +2,12 @@
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, delete, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.deps import DBSession, AuthUser
-from app.core.errors import NotFoundError, ValidationError
+from app.core.errors import NotFoundError, ValidationError, AppError
 from app.models.quiz import Quiz
 from app.models.question import Question
 from app.models.submission import Submission
@@ -419,3 +419,73 @@ async def retry_quiz(
         retry_number=retry_number,
         message=f"Retry {retry_number} created successfully",
     )
+
+
+@router.delete("/{quiz_id}")
+async def delete_quiz(
+    quiz_id: int,
+    current_user: AuthUser,
+    db: DBSession,
+    cache: CacheService = Depends(get_cache),
+):
+    """Delete a quiz and all its associated data.
+
+    Requires authentication. Only the quiz creator can delete their quiz.
+    This removes the quiz, its questions, submissions, answers, evaluations,
+    and retry records, and invalidates relevant caches.
+    """
+
+    # Load quiz
+    quiz_query = select(Quiz).where(Quiz.id == quiz_id)
+    quiz_result = await db.execute(quiz_query)
+    quiz = quiz_result.scalar_one_or_none()
+
+    if not quiz:
+        raise NotFoundError("Quiz not found")
+
+    # Authorization: only creator can delete
+    if quiz.creator_id != current_user.id:
+        from app.core.errors import AuthorizationError
+
+        raise AuthorizationError("You are not allowed to delete this quiz")
+
+    # Keep subject/grade for cache invalidation before deletion
+    subject = quiz.subject
+    grade_level = quiz.grade_level
+
+    try:
+        # Explicitly delete Retry rows that reference this quiz either as original or retried
+        retry_delete_stmt = delete(Retry).where(
+            or_(
+                Retry.original_quiz_id == quiz_id,
+                Retry.retried_quiz_id == quiz_id,
+            )
+        )
+        await db.execute(retry_delete_stmt)
+
+        # Delete the quiz (cascades to questions, submissions, answers, evaluations)
+        await db.delete(quiz)
+        await db.commit()
+
+        # Invalidate caches
+        try:
+            await cache.delete(cache.get_quiz_cache_key(quiz_id))
+            await cache.delete(cache.get_quiz_questions_cache_key(quiz_id))
+
+            # Invalidate leaderboard cache for this subject/grade
+            leaderboard_service = get_leaderboard_service(cache)
+            await leaderboard_service.invalidate_leaderboard_cache(subject, grade_level)
+        except Exception:
+            # Cache failures should not break deletion semantics
+            pass
+
+        logger.info("Quiz deleted", quiz_id=quiz_id, user_id=current_user.id)
+        return {"message": "Quiz deleted successfully", "id": quiz_id}
+
+    except AppError:
+        # Re-raise known app errors untouched
+        raise
+    except Exception as e:
+        logger.error("Failed to delete quiz", error=str(e), quiz_id=quiz_id)
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete quiz")
